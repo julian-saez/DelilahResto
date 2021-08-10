@@ -1,0 +1,44 @@
+[
+    {
+        "payment": 1,
+        "description": "2x Chicken Gold ToastBurguer",
+        "state": 1,
+        "userId": 2,
+        "foodId": 1
+    },
+    {
+        "payment": 2,
+        "description": "1x Burger Veggie",
+        "state": 2,
+        "userId": 1,
+        "foodId": 5
+    },
+    {
+        "payment": 2,
+        "description": "3x Burger Clasic",
+        "state": 3,
+        "userId": 5,
+        "foodId": 4
+    },
+    {
+        "payment": 3,
+        "description": "1x Burger Clasic",
+        "state": 1,
+        "userId": 5,
+        "foodId": 4
+    },
+    {
+        "payment": 3,
+        "description": "2x Burger Bacon",
+        "state": 3,
+        "userId": 2,
+        "foodId": 3
+    },
+    {
+        "payment": 1,
+        "description": "2x Burger Bacon",
+        "state": 1,
+        "userId": 6,
+        "foodId": 3
+    }
+]

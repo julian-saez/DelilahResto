@@ -1,0 +1,440 @@
+openapi: 3.0.1
+info:
+  version: "1.0.0"
+  title: API de Delilah Resto
+  description: Esta api se encarga de gestion todos los datos de las comidas, pedidos y usuarios registrados en la base de datos.
+severs:
+- url: localhost:3000/v1
+tags:
+  - name: users
+    description: Administra todos los datos de los usuarios registrados.
+  - name: foods
+    description: Administra toda la información de las comidas que se comercializan en Delilah Resto.
+  - name: orders
+    description: Administra todas las ordenes que realizan los usuarios ya registrados.
+paths:
+  /users:
+    get:
+      tags:
+        - users
+      summary: Obtiene todos los usuarios registrados.
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+          content: 
+            application/json:
+              schema:
+                type: array
+                items: 
+                  description: Array con la cantidad especificada en los parametros (limit y offset). También puede ser una respuesta con un solo objeto. 
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /users/{user}:
+        get: 
+          parameters:
+            - in: path
+              name: user
+          tags:
+            - users
+          summary: Muestra la información de un usuario específico.
+          requestBody:
+            content: 
+              application/json:
+                schema: 
+                  $ref: '#/components/schemas/Users/bodyRequest/loginRequirements'
+          responses:
+            '200':
+                $ref: '#/components/responses/Ok'
+            '404':
+              $ref: '#/components/responses/NotFound'
+            '403':
+              $ref: '#/components/responses/Unauthorized'
+              
+  /users/login:
+      post: 
+        tags:
+          - users
+        summary: Autentica un usuario.
+        requestBody:
+          content: 
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/Users/bodyRequest/loginRequirements'
+        responses:
+          '200':
+              $ref: '#/components/responses/Ok'
+          '404':
+            $ref: '#/components/responses/NotFound'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+        
+  /users/signup:
+      post: 
+        tags:
+          - users
+        summary: Registra una cuenta.
+        requestBody:
+          content: 
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/Users/bodyRequest/signupRequirements'
+        responses:
+          '201':
+              $ref: '#/components/responses/Created'
+          '400':
+            $ref: '#/components/responses/BadRequest'
+  /users/{id}:
+        put: 
+          parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                type: integer
+                format: int64
+              description: Id específico del usuario en la tabla users.
+          tags:
+            - users
+          summary: Le da autorización a un usuario de ser administrador.
+          requestBody:
+            required: true
+            content: 
+              application/json:
+                schema: 
+                  $ref: '#/components/schemas/Users/bodyRequest/giveManagement'
+          responses: 
+            '200':
+              $ref: '#/components/responses/Ok'
+            '404': 
+              $ref: '#/components/responses/NotFound'
+            '500': 
+              $ref: '#/components/responses/InternalServerError'
+
+        delete: 
+          parameters:
+            - in: path
+              name: id
+              required: true
+              schema:
+                type: integer
+                format: int64
+          tags:
+            - users
+          summary: Deshabilita una cuenta y la elimina para el usuario.
+          responses:
+            '200':
+              $ref: '#/components/responses/Ok'
+            '404':
+              $ref: '#/components/responses/NotFound'
+            '400': 
+              $ref: '#/components/responses/BadRequest'
+
+  /foods: 
+    get:
+      tags: 
+        - foods
+      summary: Obtiene una lista de todos los productos.
+      responses:
+        '200':
+            $ref: '#/components/responses/Ok'
+            content: 
+              application/json:
+                schema:
+                  type: array
+                  items: 
+                    description: Array con la cantidad especificada en los parametros (limit y offset). También puede ser una respuesta con un solo objeto. 
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403': 
+          $ref: '#/components/responses/Forbidden'
+    post: 
+      tags:
+        - foods
+      summary: Añade un nuevo producto.
+      requestBody:
+        content: 
+          application/json:
+            schema: 
+              $ref: '#/components/schemas/Foods/bodyRequest/properties'
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500': 
+          $ref: '#/components/responses/InternalServerError'
+          
+  /foods/{id}:
+    get:
+      tags:
+        - foods
+      summary: Obtiene una comida en específico.
+      parameters:
+        - in: query
+          name: id
+          description: Id único identificador de una comida.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+      responses:
+        '200':
+            $ref: '#/components/responses/Ok'
+            content: 
+              application/json:
+                schema:
+                  type: array
+                  items: 
+                    description: Objeto con la información solicitada.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500': 
+          $ref: '#/components/responses/InternalServerError'
+          
+    put:
+      tags:
+        - foods
+      summary: Obtiene una comida en específico.
+      parameters:
+        - in: path
+          name: id
+          description: Id único identificador de una comida.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+      bodyRequest:
+        content: 
+          application/json:
+            schema: 
+              $ref: '#/components/schemas/Foods/bodyRequest/properties'
+              description: Puede modificarse cualquier propiedad menos ID.
+      responses:
+        '200':
+            $ref: '#/components/responses/Ok'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500': 
+          $ref: '#/components/responses/InternalServerError'
+      
+    delete:
+      tags:
+        - foods
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      summary: Elimina una comida de la tabla foods.
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '404': 
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /orders:
+    get:
+      tags: 
+        - orders
+      summary: Obtiene todos los pedidos realizados.
+      responses: 
+        '200':
+          $ref: '#/components/responses/Ok'
+          content: 
+            application/json:
+              schema:
+                type: array
+                items: 
+                  description: Array con los pedidos.
+        '500':
+          $ref: '#/components/responses/InternalServerError' 
+    post: 
+      tags: 
+        - orders
+      summary: Añade una orden en la tabla.
+      bodyRequest: 
+        required: true
+        content: 
+          application/json:
+            schema: 
+              $ref: '#/components/schemas7/Orders/bodyRequest/properties'
+      responses: 
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /orders/{state}:
+    get:
+      tags:
+        - orders
+      parameters:
+        - in: path
+          name: state
+          description: Es el estado de una orden. Como, por ejemplo, new o cancelled.
+      summary: Obtiene los pedidos con un estado en específico.
+      responses: 
+        '200':
+          $ref: '#/components/responses/Ok'
+          content: 
+            application/json:
+              schema:
+                type: array
+                items: 
+                  description: Array con objetos de los pedidos según el estado especificado. 
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /orders/{id}:
+    get: 
+      tags:
+        - orders
+      parameters: 
+        - in: path  
+          name: id
+          description: Es el id de una orden de la tabla orders.
+      summary: Obtiene una orden específica de la tabla.
+      responses: 
+        '200':
+          $ref: '#/components/responses/Ok'
+          content: 
+            application/json:
+              schema:
+                type: array
+                items: 
+                  description: Objeto con la información solicitada. 
+        '500': 
+          $ref: '#/components/responses/InternalServerError'
+    put: 
+      tags:
+        - orders
+      parameters:
+        - in: path
+          name: id
+          description: Es el id de una orden de la tabla orders.
+      summary: Modifica el estado de una orden.
+      responses: 
+        '201': 
+          $ref: '#/components/responses/Created'
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '404': 
+          $ref: '#/components/responses/NotFound'
+components:
+  responses: 
+    Ok:
+      description: Se ha realizado con éxito esta solicitud.
+      items:
+        description: Objeto con la información solicitada.
+    Created: 
+      description: Recurso creado con éxito.
+    Accepted: 
+      description: La solicitud se ha recibido, pero aún no se ha actuado.
+    BadRequest: 
+      description: Falta información para completar esta solicitud.
+    Unauthorized:
+      description: Usuario sin autorización para realizar esta acción.
+    Forbidden: 
+      description: No tienes acceso a esta información.
+    NotFound: 
+      description: No se ha encontrado el recurso que solicita.
+    InternalServerError: 
+      description: Ha ocurrido un error durante el proceso.
+  schemas:
+    Users:
+      bodyRequest:
+        loginRequirements:
+          properties:
+            username: 
+              type: STRING
+              require: true
+              unique: true
+              description: Nombre unico de usuario.
+            password: 
+              type: JSON
+              require: true
+              description: Contraseña que ingreso al registrarse.
+        signupRequirements:
+          properties:
+            id:
+              type: INTEGER
+              primaryKey: true
+              autoIncrement: true
+              description: Número único asignado automaticamente por el sistema.
+            username:
+              type: STRING
+              require: true
+              unique: true
+              description: Nombre unico de usuario.
+            nameAndSurname: 
+              type: STRING
+              require: true
+              description: Nombre y apellido paterno o materno del usuario.
+            email: 
+              type: STRING
+              require: true
+              unique: true
+              description: Correo electronico que use el usuario.
+            phoneNumber:
+              type: INTEGER
+              require: true
+              description: Número de telefono para contactar al cliente.
+            address: 
+              type: STRING
+              require: true
+              description: Dirección de la casa del usuario.
+            password: 
+              type: JSON
+              require: true
+              description: Contraseña con la que se iniciará sesión en un futuro.
+            admin:
+              type: BOOLEAN
+              default: false
+              description: Propiedad para saber si el usuario es administrador de Delilah Resto y así definir las acciones que podrá realizar.
+            isDisable:
+              type: BOOLEAN
+              default: true
+              description: Propiedad para saber si la cuenta esta activada o desactivada. 
+        giveManagement:
+          properties: 
+            type: BOOLEAN
+            description: Le da o le quita autoridad de administrador a un usuario.
+    Foods:
+      bodyRequest:
+        type: Object
+        properties:
+          id:
+            type: INTEGER,
+            primaryKey: true,
+            autoIncrement: true
+          name:
+            type: STRING
+            required: true
+            example: Sandwich Veggie,
+            unique: true
+          price:
+            type: INTEGER,
+            required: true,
+            example: 450
+          availability: 
+            type: INTEGER,
+            required: true,
+            example: 1 #the number 1 means the food is available to buy.
+    Orders:
+      bodyRequest: 
+        type: Object
+        properties:
+          id:
+            type: INTEGER,
+            primaryKey: true,
+            autoIncrement: true
+          payment:
+            type: INTEGER,
+            required: true
+          description: 
+            type: STRING,
+            require: true
+          state: 
+            type: ENUM,
+            default: 1
