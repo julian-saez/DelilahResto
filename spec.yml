@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   version: "1.0.0"
   title: API de Delilah Resto
-  description: Esta api se encarga de gestion todos los datos de las comidas, pedidos y usuarios registrados en la base de datos.
+  description: Esta api se encarga de gestionar todos los datos de las comidas, pedidos y usuarios registrados en la base de datos.
 severs:
 - url: localhost:3000/v1
 tags:

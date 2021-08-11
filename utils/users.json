@@ -13,7 +13,8 @@
         "email": "sepu@gmail.com",
         "phone": 294785156,
         "address": "Elordi 566",
-        "password": "seguracontra"
+        "password": "seguracontra",
+        "isAdmin": true
     },
     {
         "username": "kickss7",
