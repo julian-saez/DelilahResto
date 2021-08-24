@@ -22,11 +22,13 @@ Para el funcionamiento correcto de la API, deberás instalar las siguientes depe
 
 - *npm i bcrypt*
 
+- *npm i helmet*
+
 - *npm i cors*
 
-- *npm i sequelize*
-
 - *npm i mysql*
+
+- *npm i mysql2*
 
 - *npm i jsonwebtoken*
 
@@ -44,18 +46,25 @@ Ejecutar en la terminal:
 
 - *nodemon server.js*
 
-Ejecutar XAMPP con permisos de administrador:
+Al ejecutar XAMPP (con permisos de administrador):
 
 - *Start apache*
 - *Start mysql*
 
-Por último, realiza una petición POST en **postman** con el endpoint **localhost:3000/v1/db** para subir datos de simulación en las tablas (**solo una vez**). Luego, en **localhost:3000/v1/users/login** pasa por el body el siguiente objeto json para iniciar sesión con la cuenta del administrador.
+Por último, ejecuta manualmente el contenido de los archivos SQL en phpmyadmin para añadir valores de simulación a la base de datos. Luego, realiza una peticion POST a **localhost:3000/v1/users/signup** pasando por el body el siguiente objeto json para registrarte en delilahresto. 
 
 {
     "username": "sevenn",
+    "nameAndSurname": "Julian Sepulveda",
+    "email": "sepu@gmail.com",
+    "phone": 294785156,
+    "address": "Elordi 566",
     "password": "seguracontra"
 }
 
-La respuesta vendrá acompañada de un token que te servirá para autenticarte por 30 minutos.
+Esta cuenta es, por default, la que te permitirá realizar acciones de ROL ADMINISTRADOR. Una vez registrado, inicia sesion con la misma. La respuesta vendrá acompañada de un token que te servirá para autenticarte por 30 minutos.
+
+**Si deseas realizar peticiones CRUD como usuario normal, deberás registrar una cuenta con datos al azar. Los usuarios de simulación no tienen la password hasheada y la API mostrará error al ejecutar los middlewares.**
 
 Listo, ya puedes realizar peticiones CRUD.
+
