@@ -26,8 +26,6 @@ Para el funcionamiento correcto de la API, deberás instalar las siguientes depe
 
 - *npm i cors*
 
-- *npm i mysql*
-
 - *npm i mysql2*
 
 - *npm i jsonwebtoken*
