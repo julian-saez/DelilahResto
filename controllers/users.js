@@ -1,154 +1,108 @@
-const { Users, Orders } = require('../db/db')
 const bcrypt = require('bcrypt')
 const { encode } = require('../services')
 const { getToken } = require('../services/index')
-const { JWT_TOKEN } = require('../config')
-const jwt = require('jsonwebtoken')
+const conexion = require('../database/db')
+const { codes } = require('../utils/responses.js')
 
 exports.findAll = (req, res) => {
-    const queryParams = req.query
-    Users.findAll({
-        limit: parseInt(queryParams.limit),
-        offset: parseInt(queryParams.offset),
-        attributes: ['username', 'nameAndSurname', 'email', 'phone', 'address', 'IsAdmin']
+    const offset = req.query.offset
+    conexion.query(`SELECT * FROM users ORDER BY userId ASC LIMIT ${offset}`, (err, rows) => {
+        if(err) res.send(err)
+        res.send(rows)
     })
-        .then(data => {
-            res.status(200).send({
-                "description": "Se ha realizado con éxito esta solicitud.",
-                "content":{
-                    "application/json":{
-                        "schema":{
-                            "type": "array",
-                            "items": data
-                        }
-                    }
-                }
-            })
-        })
-        .catch(() => {
-            res.status(404).json({
-                "Error": "No se han encontrado resultados."
-            })
-        })
 }
 
-
-exports.findById = (req, res) => {
-    const username = req.params.user
+exports.getUsername = (req, res) => {
+    const username = req.params.username
     if(req.username === username || req.admin){
-        Users.findAll({
-            include: {
-                model: Orders,
-                attributes:['payment', 'description', 'state']
-            },
-            where:{
-                username: username
-            },
-            attributes:['username', 'nameAndSurname', 'email', 'phone', 'address']
-        })
-            .then(data => {
-                res.status(200).json({
-                    "description": "Find a user by ID",
-                    "content":{
-                        "application/json":{
-                            "schema":{
-                                "type": "array"
-                            },
-                            "profileData": data
-                        }
-                    }
-                })
-            })
-            .catch(() => {
-                res.status(404).send({
-                    error: "No se han encontrado resultados."
-                })
+        conexion.query(`SELECT * FROM users WHERE username = ?`, [username], (err, rows) => {
+                if(err) res.send(codes[0].NotFound)
+                res.status(200).send(rows)
             })
     }else{
-        res.status(403).send({
-            mensaje: 'No tienes acceso a esta información'
-        })
+        res.status(403).send(codes[0].Unauthorized)
     }
 }
 
 exports.create = async (req, res) => {
     const { username, nameAndSurname, email, phone, address, password } = req.body
+    const passwordCrypted = await encode(password)
 
     // Sevenn is the owner of Delilah Resto
     let isAdmin = username === 'sevenn' ? true : false
-    const user = {
-        username: username,
-        nameAndSurname: nameAndSurname,
-        email: email,
-        phone: phone,
-        address: address,
-        password: await encode(password),
-        isAdmin: isAdmin      
-    }
 
-    Users.create(user)
-        .then(() => {
-            res.status(201).json({
-                message: "Usuario creado con éxito."
-            })
+    if(username && nameAndSurname && email && phone && address && password){
+        conexion.query(`INSERT INTO users (userId, username, nameAndSurname, email, phone, address, password, isAdmin) VALUES(NULL, ?, ?, ?, ?, ?, ?, ?)`, [username, nameAndSurname, email, phone, address, passwordCrypted, isAdmin], (err, state) => {
+            if(err) {
+                if(err.errno === 1062){
+                    res.send({
+                        message: "El usuario ya existe."
+                    })
+                }
+            }else if(state.serverStatus === 2){
+                res.send(codes[0].Created)
+            }else{
+                res.sendStatus(202)
+            }
         })
-        .catch(() => {
-            res.status(400).send({
-                error: "Falta información para completar esta solcitud."
-            })
+    }else{
+        res.send({
+            status: 400,
+            error: "Hay campos incompletos."
         })
+    }
 }
 
 exports.delete = (req, res) => {
     const id = req.params.id
-    Users.update(req.body, {
-        where:{
-            id: id
+
+    // I delete first the userId that it references in Orders to delete the user in users's table.
+    conexion.query(`DELETE FROM orders WHERE user_id = ${id}`, (err, state) => {
+        if(err){
+            console.log(err)
+            if(err.errno === 1054){
+                res.status(400).send(codes[0].BadRequest)
+            }else{
+                res.status(500).send(codes[0].InternalServerError)
+            }
         }
-    })
-        .then(num => {
-            if(num == 1){
-                res.status(200).send({
-                    message: "Se ha realizado con éxito esta solicitud."
+        conexion.query(`DELETE FROM users WHERE userId = ${id}`, (err, state) => {
+            if(err) res.send(err)
+            if(state.affectedRows === 1){
+                res.status(201).send({
+                    status: codes[0].Created,
+                    elements_deleted: state.affectedRows
                 })
             }else{
                 res.status(404).send({
-                    message: "No se ha encontrado el recurso que solicita."
+                    message: codes[0].NotFound
                 })
             }
-        })
-        .catch(() => {
-            res.status(400).send({
-                message: "Falta información para completar esta solicitud."
         })
     })
 }
 
 exports.login = async (req, res) => {
-    const { username, password, email } = req.body
-    let isRegistered;
+    const { username, password } = req.body
     let passwordSaved;
     let isAdmin;
 
-    await Users.findAll({
-        where: {
-            username: username
-        },
-        attributes: ['username', 'password', 'isAdmin']
-    })
-        .then(el => {
-            if(el[0].username === username){
-                isRegistered = true
-                passwordSaved = el[0].password,
-                isAdmin = el[0].isAdmin
-            }
-        })
-        .catch(() => {
+    conexion.query('SELECT * FROM users WHERE username = ?', [username], (err, rows) => {
+        if(err){
+            res.send(err)
+        }
+        let exits = rows.length === 1 ? true : false
+        if(exits){
+            passwordSaved = rows[0].password
+            isAdmin = rows[0].isAdmin
+            getAccess()
+        }else{
             res.status(404).send({
-                message: "No se ha encontrado el recurso que solicita."
+                message: "El usuario no existe o fue eliminado."
             })
-        })
-    if(isRegistered){
+        }
+    })
+    const getAccess = () => {
         bcrypt.compare(password, passwordSaved, function(err, areEqual) {
             if(err){
                 return err
@@ -156,41 +110,36 @@ exports.login = async (req, res) => {
                 res.status(200).send({
                     token: getToken({
                         username: username,
-                        email: email,
                         isAdmin: isAdmin
                     }),
-                    message: 'Se ha realizado con éxito esta solicitud.'
+                    expiresIn: "30 minutes.",
+                    status: codes[0].Ok
                 })
             }else{
-                res.status(401).send({
-                    message: "Usuario sin autorización para realizar esta acción."
+                res.status(403).send({
+                    message: "La contraseña ingresada es invalida."
                 })
             }
         })
     }
+    
 }
 
 exports.giveManagement = (req, res) => {
-    Users.update(req.body, {
-        where: {
-            id: req.params.id
+    const { isAdmin, username } = req.body
+    conexion.query(`UPDATE users SET isAdmin = ? WHERE username = ?`, [isAdmin, username], (err, rows) => {
+        if(err) res.status(500).send({
+            message: codes[0].InternalServerError
+        })
+        if(rows.affectedRows === 1){
+            res.status(201).send({
+                message: codes[0].Created
+            })
+        }else{
+            res.status(404).send({
+                message: codes[0].NotFound
+            })
         }
     })
-        .then(num => {
-            if(num == 1){
-                res.status(201).send({
-                    message: "Se ha realizado con éxito esta solicitud."
-                })
-            }else{
-                res.status(404).send({
-                    message: "No se ha encontrado el recurso que solicita."
-                })
-            }
-        })
-        .catch(() => {
-            res.status(500).send({
-                message: "Ha ocurrido un error durante el proceso."
-            })
-        })
 }
 

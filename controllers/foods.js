@@ -1,136 +1,99 @@
-const { Foods, Orders } = require('../db/db')
-const jwt = require('jsonwebtoken')
-const { JWT_TOKEN } = require('../config')
+const conexion = require('../database/db')
 const { codes } = require('../utils/responses')
 
 exports.findAll = (req, res) => {
-    jwt.verify(req.token, JWT_TOKEN, (err, auth) => {
-        if(err){
-            res.status(403).send({
-                message: codes[0].Forbidden
+    conexion.query('SELECT * FROM foods', (err, rows) => {
+        if(err) res.status(500).send({
+            message: codes[0].InternalServerError
+        })
+        let isNull = rows.length === 0 ? false : true
+        if(isNull){
+            res.status(200).send(rows)
+        }else{
+            res.status(404).send({
+                message: codes[0].NotFound
             })
-        }else{ 
-            Foods.findAll({
-                where: {
-                    availability: 1
-                },
-                attributes: auth.isAdmin ? {
-                    include: {
-                        model: Orders
-                    },
-                } : {
-                    exclude: {
-                        model: Orders
-                    }
-                }
-            })
-                .then(data => {
-                    if(auth.isAdmin){
-                        res.status(200).send(data)
-                    }else{
-                        res.status(200).send(data)
-                    }
-                })
-                .catch(() => {
-                    res.status(404).send({
-                        message: codes[0].NotFound
-                    })
-                }) 
         }
     })
 }
 
 exports.findOne = (req, res) => {
     const id = req.params.id
-    Foods.findByPk(id)
-        .then(data => {
-            if(data !== null){
-                res.status(200).send(data)
-            }else{
-                res.status(404).send({
-                    message: codes[0].NotFound
-                })
-            }
+    conexion.query('SELECT * FROM foods WHERE foodId = ?', [id], (err, rows) => {
+        if(err) res.status(500).send({
+            message: codes[0].InternalServerError
         })
-        .catch(() => {
-            res.status(500).send({
-                message: codes[0].InternalServerError
-            })
-        })
+        let isNull = rows.length === 0 ? false : true
+        if(isNull){
+            res.status(200).send(rows)
+        }else{
+            res.status(404).send("No hay un plato con ese ID.")
+        }
+    })
 }
+
 exports.delete = (req, res) => {
     const id = req.params.id
-
-    Foods.destroy({
-        where: { id: id }
-    })
-        .then(num => {
-            if(num == 1){
-                res.status(201).send({
-                    message: codes[0].Created
-                })
-            }else{
-                res.status(404).send({
-                    message: codes[0].NotFound
-                })
-            }
+    conexion.query('DELETE FROM foods WHERE foodId = ?', [id], (err, rows) => {
+        if(err) res.status(500).send({
+            message: codes[0].InternalServerError
         })
-        .catch(() => {
-            res.status(500).send({
-                message: codes[0].InternalServerError
+        if(rows.affectedRows !== 0){
+            res.status(201).send({
+                status: 201,
+                affectedRows: rows.affectedRows
             })
-        })
+        }else{
+            res.status(404).send({
+                message: codes[0].NotFound
+            })
+        }
+    })
 }
 
 exports.create = (req, res) => {
-    const { name, price, img } = req.body
-    if(!name, !price, !img){
+    const { food_title, price } = req.body
+    if(!food_title, !price){
         res.status(400).send({
             message: codes[0].BadRequest
         })
     }
-
     const food = {
-        name: name,
-        price: price,
-        img: img,
-        availability: 1
+        food_title: food_title,
+        price: price
     }
-
-    Foods.create(food)
-        .then(data => {
-            res.status(201).send(data)
-        })
-        .catch(() => {
-            res.status(500).send({
-                message: codes[0].InternalServerError 
-            })   
-        })
+    conexion.query('INSERT INTO foods(foodId, food_title, price) VALUES(NULL, ?, ?)', [food.food_title, food.price], (err, rows) => {
+        if(err) res.status(500).send(codes[0].InternalServerError)
+        if(rows.affectedRows !== 0){
+            res.status(201).send({
+                message: codes[0].Created,
+                status: 201,
+                affectedRows: rows.affectedRows
+            })
+        }else{
+            res.send(500).send(codes[0].InternalServerError)
+        }
+    })
 }
 
 exports.update = (req, res) => {
-    const id = req.params.id
-
-    Foods.update(req.body, {
-        where: {
-            id: id
+    const { foodId, price } = req.body
+    conexion.query('UPDATE foods SET price = ? WHERE foodId = ?', [price, foodId], (err, rows) => {
+        if(err) res.status(500).send({
+            message: codes[0].InternalServerError
+        })
+        if(rows.affectedRows !== 0){
+            res.status(201).send({
+                message: codes[0].Created,
+                status: 201,
+                affectedRows: rows.affectedRows
+            })
+        }else{
+            res.status(404).send({
+                message: codes[0].NotFound,
+                status: 404
+            })
         }
     })
-        .then(num => {
-            if(num == 1){
-                res.status(201).send({
-                    message: codes[0].Ok
-                })
-            }else{
-                res.status(404).send({
-                    message: codes[0].NotFound
-                })
-            }
-        })
-        .catch(() => {
-            res.status(500).send({
-                message: codes[0].InternalServerError
-            })
-        })
 }
 

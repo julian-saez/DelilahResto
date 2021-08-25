@@ -1,5 +1,6 @@
 const { JWT_TOKEN } = require("../config")
 const jwt = require('jsonwebtoken')
+const conexion = require('../database/db')
 
 const verifyToken = (req, res, next) => {
     const bearerHeader = req.headers['authorization'];
@@ -10,7 +11,7 @@ const verifyToken = (req, res, next) => {
             if(err){
                 res.sendStatus(401)
             }else{
-                // Closure to take this value in VerifyRol 
+                // Closure to take this value in VerifyRol
                 req.admin = auth.isAdmin 
                 req.username = auth.username
                 next()
@@ -29,7 +30,31 @@ const verifyRol = (req, res, next) => {
     }
 }
 
+const verifyId = (req, res, next) => {
+    conexion.query('SELECT username FROM users WHERE userId = ?', [req.params.id], (err, rows) => {
+        if(err){
+            req.match = false
+            next()
+        }  
+        let isNull = rows.length === 0 ? true : false
+        
+        if(isNull){
+            req.match = false
+            next()
+        }else{
+            if(rows[0].username === req.username){
+                req.match = true
+                next()
+            }else{
+                req.match = false
+                next()
+            }
+        }
+    })
+}
+
 module.exports = {
     verifyToken,
-    verifyRol
+    verifyRol,
+    verifyId
 }

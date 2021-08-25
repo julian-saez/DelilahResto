@@ -7,13 +7,11 @@ app.use(cors())
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true }))
 app.use(helmet())
-
-require('./db/db')
+require('./database/db')
 
 const users = require('./routes/users')
 const foods = require('./routes/foods')
 const orders = require('./routes/orders')
-const db_values = require('./routes/db')
 
 app.use(express.json())
 
@@ -26,7 +24,6 @@ app.listen(app.get('port'), () => {
 app.use('/v1/users', users)
 app.use('/v1/foods', foods)
 app.use('/v1/orders', orders)
-app.use('/v1/db', db_values)
 
 app.use((err, req, res, next) => {
 	if (!err) return next();
